@@ -1,67 +1,82 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"errors"
 	"golang.org/x/net/context"
 	"google.golang.org/api/youtube/v3"
-	"log"
+	"io/ioutil"
+	"os"
 )
 
-func subscriptionList(service *youtube.Service) {
-	format := "%-43v\t%-24v\t%-20v\t%v\n"
-
+func retrieveSubscriptionList(service *youtube.Service) ([]*youtube.Subscription, error) {
 	call := service.Subscriptions.List([]string{"snippet"})
 	call.Mine(true)
 	call.MaxResults(maxResults)
+	var subscriptions []*youtube.Subscription
 
-	fmt.Printf(format, "Id", "ResorceId", "Kind", "Title")
 	err := call.Pages(context.Background(), func(response *youtube.SubscriptionListResponse) error {
-		for _, subscription := range response.Items {
-			fmt.Printf(format, subscription.Id, subscription.Snippet.ResourceId.ChannelId, subscription.Snippet.ResourceId.Kind, subscription.Snippet.Title)
-		}
+		subscriptions = append(subscriptions, response.Items[:]...)
 		return nil
 	})
 
-	if err != nil {
-		log.Fatalf("Unable to call service: %v", err)
-	}
+	return subscriptions, err
 }
 
-func subscriptionAdd(service *youtube.Service) {
-	if *channelId == "" {
-		log.Fatalf("channelId is required")
+func saveSubscriptionList(service *youtube.Service, filename string) error {
+	subscriptions, err := retrieveSubscriptionList(service)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(f).Encode(subscriptions)
+}
+
+func readSubscriptionList(filename string) ([]*youtube.Subscription, error) {
+	var subscriptions []*youtube.Subscription
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return subscriptions, err
+	}
+
+	err = json.Unmarshal(b, &subscriptions)
+
+	return subscriptions, err
+}
+
+func subscriptionAdd(service *youtube.Service, channelId string) (*youtube.Subscription, error) {
+	if channelId == "" {
+		return nil, errors.New("channelId is required")
 	}
 
 	subscription := youtube.Subscription{
 		Snippet: &youtube.SubscriptionSnippet{
 			ResourceId: &youtube.ResourceId{
-				ChannelId: *channelId,
+				ChannelId: channelId,
 				Kind:      "youtube#channel",
 			},
 		},
 	}
 
 	call := service.Subscriptions.Insert([]string{"snippet"}, &subscription)
-	response, err := call.Do()
-
-	if err != nil {
-		log.Fatalf("Unable to create subscription: %v", err)
-	}
-
-	fmt.Printf("Subscription created: %v", response.Id)
+	return call.Do()
 }
 
-func subscriptionDel(service *youtube.Service) {
-	if *subscriptionId == "" {
-		log.Fatalf("resourceId is required")
+func subscriptionDel(service *youtube.Service, subscriptionId string) error {
+	if subscriptionId == "" {
+		return errors.New("subscriptionId is required")
 	}
 
-	call := service.Subscriptions.Delete(*subscriptionId)
-	err := call.Do()
-
-	if err != nil {
-		log.Fatalf("Unable to remove subscription: %v", err)
-	}
-
-	fmt.Printf("Subscription deleted")
+	call := service.Subscriptions.Delete(subscriptionId)
+	return call.Do()
 }
