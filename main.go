@@ -10,12 +10,9 @@ import (
 )
 
 var (
-	method = flag.String("method", "playlists", "The APi Method to execute (default: playlists)")
-	mine   = flag.Bool("mine", true, "List playlist for authenticated user (default: true)")
-
-	channelId = flag.String("channel", "", "add-subscription, channelId of subscription")
-
-	subscriptionId = flag.String("subscription", "", "rm-subscription, subscriptionId of subscription")
+	method         = flag.String("method", "playlists", "The APi Method to execute (default: playlists). playlists, subscriptions, rm-subscription, add-subscription")
+	channelId      = flag.String("channel", "", "add-subscription | channelId to subscribe")
+	subscriptionId = flag.String("subscription", "", "rm-subscription | subscriptionId to be removed")
 )
 
 const (
@@ -25,9 +22,7 @@ const (
 func playList(service *youtube.Service) {
 	format := "%-34v\t%v\n"
 	call := service.Playlists.List([]string{"snippet"})
-	if *mine {
-		call.Mine(*mine)
-	}
+	call.Mine(true)
 	call.MaxResults(maxResults)
 
 	fmt.Printf(format, "Id", "Title")
@@ -47,7 +42,7 @@ func subscriptionList(service *youtube.Service) {
 	format := "%-43v\t%-24v\t%-20v\t%v\n"
 
 	call := service.Subscriptions.List([]string{"snippet"})
-	call.Mine(*mine)
+	call.Mine(true)
 	call.MaxResults(maxResults)
 
 	fmt.Printf(format, "Id", "ResorceId", "Kind", "Title")
