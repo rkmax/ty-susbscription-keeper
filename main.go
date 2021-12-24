@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	method         = flag.String("method", "playlists", "The APi Method to execute (default: playlists). playlists, subscriptions, rm-subscription, add-subscription")
+	method         = flag.String("method", "subscriptions", "The APi Method to execute (default: playlists). playlists, subscriptions, rm-subscription, add-subscription")
 	channelId      = flag.String("channel", "", "add-subscription | channelId to subscribe")
 	subscriptionId = flag.String("subscription", "", "rm-subscription | subscriptionId to be removed")
 )
