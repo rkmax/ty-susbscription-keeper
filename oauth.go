@@ -20,12 +20,13 @@ import (
 )
 
 const (
-	launchWebServer = true
 	redirectUrl     = "http://localhost:8090"
 	tcpHost         = "localhost:8090"
+	secretsFilename = "ty-subscription-keeper_secrets.json"
+	cacheFilename   = "ty-subscription-keeper.json"
 )
 
-func getClient(scope string) *http.Client {
+func getClient(scope string, launchWebServer bool) *http.Client {
 	ctx := context.Background()
 
 	configFile, err := getConfigFile()
@@ -90,7 +91,7 @@ func getConfigFile() (string, error) {
 			return "", err
 		}
 
-		secretFileInCache := filepath.Join(secretCacheDir, "ty-susbscription-keeper_secrets.json")
+		secretFileInCache := filepath.Join(secretCacheDir, secretsFilename)
 
 		_, err = os.Open(secretFileInCache)
 		if err != nil {
@@ -116,7 +117,7 @@ func tokenCacheFile() (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(tokenCacheDir, url.QueryEscape("ty-susbscription-keeper.json")), err
+	return filepath.Join(tokenCacheDir, url.QueryEscape(cacheFilename)), err
 }
 
 func readTokenFromFile(file string) (*oauth2.Token, error) {
