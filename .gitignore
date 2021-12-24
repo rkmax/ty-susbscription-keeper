@@ -1,2 +1,5 @@
+# Secrets
 /client_secrets.json
 /client_web_secrets.json
+# Binary
+/ty-susbscription-keeper
