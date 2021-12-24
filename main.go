@@ -11,7 +11,7 @@ import (
 
 var (
 	method = flag.String("method", "playlists", "The APi Method to execute (default: playlists)")
-	mine   = flag.Bool("mine", false, "List playlist for authenticated user (default: false)")
+	mine   = flag.Bool("mine", true, "List playlist for authenticated user (default: true)")
 )
 
 const (
@@ -19,13 +19,17 @@ const (
 )
 
 func playList(service *youtube.Service) {
+	format := "%-34v\t%v\n"
 	call := service.Playlists.List([]string{"snippet"})
-	call.Mine(*mine)
+	if *mine {
+		call.Mine(*mine)
+	}
 	call.MaxResults(maxResults)
 
+	fmt.Printf(format, "Id", "Title")
 	err := call.Pages(context.Background(), func(response *youtube.PlaylistListResponse) error {
 		for _, playlist := range response.Items {
-			fmt.Println(playlist.Id, playlist.Snippet.Title)
+			fmt.Printf(format, playlist.Id, playlist.Snippet.Title)
 		}
 		return nil
 	})
@@ -54,13 +58,13 @@ func main() {
 }
 
 func subscriptionList(service *youtube.Service) {
-	format := "%v\t%v\t%v\n"
+	format := "%-43v\t%-24v\t%v\n"
 
 	call := service.Subscriptions.List([]string{"snippet"})
 	call.Mine(*mine)
 	call.MaxResults(maxResults)
 
-	fmt.Printf(format, "Id                                        ", "ResorceId               ", "Title")
+	fmt.Printf(format, "Id", "ResorceId", "Title")
 	err := call.Pages(context.Background(), func(response *youtube.SubscriptionListResponse) error {
 		for _, playlist := range response.Items {
 			fmt.Printf(format, playlist.Id, playlist.Snippet.ResourceId.ChannelId, playlist.Snippet.Title)
