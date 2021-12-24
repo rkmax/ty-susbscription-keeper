@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -27,7 +28,12 @@ const (
 func getClient(scope string) *http.Client {
 	ctx := context.Background()
 
-	b, err := ioutil.ReadFile("client_web_secrets.json")
+	configFile, err := getConfigFile()
+	if err != nil {
+		log.Fatalf("Unable to found secrets %v", err)
+	}
+
+	b, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		log.Fatalf("Unable to read client secrets %v", err)
 	}
@@ -67,6 +73,34 @@ func getClient(scope string) *http.Client {
 	}
 
 	return config.Client(ctx, token)
+}
+
+func getConfigFile() (string, error) {
+	secretFileInCwd := "client_web_secrets.json"
+	_, err := os.Open(secretFileInCwd)
+	if errors.Is(err, os.ErrNotExist) {
+		usr, err := user.Current()
+		if err != nil {
+			return "", err
+		}
+
+		secretCacheDir := filepath.Join(usr.HomeDir, ".credentials")
+		err = os.MkdirAll(secretCacheDir, 0700)
+		if err != nil {
+			return "", err
+		}
+
+		secretFileInCache := filepath.Join(secretCacheDir, "ty-susbscription-keeper_secrets.json")
+
+		_, err = os.Open(secretFileInCache)
+		if err != nil {
+			return "", err
+		}
+
+		return secretFileInCache, err
+	}
+
+	return secretFileInCwd, err
 }
 
 func tokenCacheFile() (string, error) {
